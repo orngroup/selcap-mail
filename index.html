@@ -40,6 +40,7 @@ a{color:var(--red);text-decoration:none}
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:40px}
 .login-logo .mark{width:38px;height:38px;border-radius:7px;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px}
 .login-sub{color:var(--text-2);font-size:13px;margin-bottom:28px}
+.login-foot{color:var(--text-3);font-size:12px;margin-top:16px;line-height:1.5}
 .ms-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);font-size:14px;font-weight:600;transition:background .15s}
 .ms-btn:hover{background:var(--surface-2)}
 .ms-logo{width:18px;height:18px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
@@ -215,15 +216,12 @@ tr:hover .row-actions{opacity:1}
   <div class="login-bg" id="loginBg"></div>
   <div class="login-card">
     <div class="login-logo"><img id="loginLogo" alt="Selcap" style="height:38px"><span id="loginLogoFallback" class="mark hidden">S</span></div>
-    <p class="login-sub">Secure Microsoft 365 self-service portal</p>
+    <p class="login-sub" id="loginSub">Secure Microsoft 365 self-service portal</p>
     <button class="ms-btn" onclick="SCM.msLogin()">
       <span class="ms-logo"><span style="background:#f25022"></span><span style="background:#7fba00"></span><span style="background:#00a4ef"></span><span style="background:#ffb900"></span></span>
       Sign in with Microsoft
     </button>
-    <div class="demo-note">
-      <b>Demo mode</b> — pick a user to preview their view. Live sign-in uses your Microsoft work account.
-      <div class="demo-users" id="demoUsers"></div>
-    </div>
+    <p class="login-foot">Sign in with your work Microsoft account. Access is limited to authorised users.</p>
   </div>
 </div>
 
@@ -337,15 +335,30 @@ function visibleUsers(){
 function companyUsers(name){return S.users.filter(u=>u.company===name);}
 
 // ---------- Branding ----------
+// Map a URL ?company= slug to a company name
+const COMPANY_SLUGS={cato:'Cato Services',homesite:'HomeSite Group',yec:'YEC Management',selcap:'SelCap Group',chanlon:'Chanlon Property',winsley:'Winsley Group',thinc:'Thinc Digital'};
+function urlCompany(){
+  try{ const p=new URLSearchParams(window.location.search); const s=(p.get('company')||'').toLowerCase(); return COMPANY_SLUGS[s]||null; }catch(e){ return null; }
+}
 function applyLoginBrand(){
   const run=()=>{
     const A=window.ASSETS||{};
     const bg=document.getElementById('loginBg');
     const img=A.loginbg||A.bg2;
     if(bg && img) bg.style.backgroundImage="url('"+img+"')";
-    const logo=document.getElementById('loginLogo'), fb=document.getElementById('loginLogoFallback');
-    if(A.selcap && logo){ logo.src=A.selcap; }
-    else if(logo){ logo.classList.add('hidden'); if(fb)fb.classList.remove('hidden'); }
+    const logo=document.getElementById('loginLogo'), fb=document.getElementById('loginLogoFallback'), sub=document.getElementById('loginSub');
+    // If the URL targets a specific company, brand the login for it
+    const company=urlCompany();
+    if(company && COMPANIES[company]){
+      const cfg=COMPANIES[company];
+      if(cfg.logo && A[cfg.logo] && logo){ logo.src=A[cfg.logo]; logo.style.height='42px'; logo.classList.remove('hidden'); if(fb)fb.classList.add('hidden'); }
+      else if(logo){ logo.classList.add('hidden'); if(fb){fb.classList.remove('hidden'); fb.textContent=company[0];} }
+      if(sub) sub.textContent=company+' — Email Management Portal';
+      document.title=company+' — Email Portal';
+    } else {
+      if(A.selcap && logo){ logo.src=A.selcap; logo.classList.remove('hidden'); if(fb)fb.classList.add('hidden'); }
+      else if(logo){ logo.classList.add('hidden'); if(fb)fb.classList.remove('hidden'); }
+    }
   };
   run();
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', run); }
@@ -1268,7 +1281,6 @@ Object.assign(SCM,{
 
 /* ============ BOOT ============ */
 SCM.seedData();
-SCM.buildDemoUsers();
 SCM.applyLoginBrand();
 SCM.initMsal();
 if(SCM.DB) SCM.DB.init();
