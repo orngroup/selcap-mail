@@ -1,1 +1,996 @@
-kkk
+<!DOCTYPE html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selcap Cloud Manager</title>
+<style>
+:root{
+  --red:#b00020; --red-dark:#8a0019; --red-soft:#fbe9ec;
+  --bg:#f3f2f1; --surface:#ffffff; --surface-2:#faf9f8;
+  --border:#e1dfdd; --border-strong:#c8c6c4;
+  --text:#201f1e; --text-2:#605e5c; --text-3:#8a8886;
+  --green:#107c10; --amber:#c19c00; --blue:#0078d4;
+  --shadow:0 1.6px 3.6px rgba(0,0,0,.08),0 .3px .9px rgba(0,0,0,.06);
+  --shadow-lg:0 6.4px 14.4px rgba(0,0,0,.12),0 1.2px 3.6px rgba(0,0,0,.08);
+  --radius:6px; --sidebar-w:248px;
+  --font:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#1b1a19; --surface:#252423; --surface-2:#2d2c2b;
+  --border:#3b3a39; --border-strong:#484644;
+  --text:#f3f2f1; --text-2:#c8c6c4; --text-3:#979593;
+  --red:#e74856; --red-dark:#c53340; --red-soft:#3a2226;
+  --shadow:0 1.6px 3.6px rgba(0,0,0,.3);
+  --shadow-lg:0 6.4px 14.4px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:14px}
+a{color:var(--red);text-decoration:none}
+.hidden{display:none!important}
+
+/* ---------- Login ---------- */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8a0019,#b00020 60%,#5c0011);padding:20px}
+.login-card{background:var(--surface);border-radius:8px;box-shadow:var(--shadow-lg);width:100%;max-width:400px;padding:40px 36px}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.login-logo .mark{width:34px;height:34px;border-radius:7px;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+.login-logo h1{font-size:18px;font-weight:600}
+.login-sub{color:var(--text-2);font-size:13px;margin-bottom:28px}
+.ms-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);font-size:14px;font-weight:600;transition:background .15s}
+.ms-btn:hover{background:var(--surface-2)}
+.ms-logo{width:18px;height:18px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.ms-logo span{display:block}
+.demo-note{margin-top:24px;padding-top:20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.demo-users{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.demo-users button{text-align:left;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:12.5px;transition:.15s;background:var(--surface-2)}
+.demo-users button:hover{border-color:var(--red);background:var(--red-soft)}
+.demo-users b{color:var(--text)}
+.demo-users .r{color:var(--text-3);font-size:11px}
+
+/* ---------- Shell ---------- */
+#app{display:none;min-height:100vh}
+.topbar{height:48px;background:var(--red);color:#fff;display:flex;align-items:center;padding:0 16px;gap:14px;position:sticky;top:0;z-index:50}
+.topbar .brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px}
+.topbar .brand .mark{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:700}
+.topbar .spacer{flex:1}
+.topbar .company-pill{background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer}
+.topbar .company-pill:hover{background:rgba(255,255,255,.25)}
+.topbar .icon-btn{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff}
+.topbar .icon-btn:hover{background:rgba(255,255,255,.15)}
+.topbar .avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.layout{display:flex}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);height:calc(100vh - 48px);position:sticky;top:48px;overflow-y:auto;padding:10px 0;flex-shrink:0}
+.nav-group-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);padding:14px 20px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:12px;padding:9px 20px;color:var(--text-2);font-size:14px;cursor:pointer;border-left:3px solid transparent}
+.nav-item:hover{background:var(--surface-2);color:var(--text)}
+.nav-item.active{background:var(--red-soft);color:var(--red);border-left-color:var(--red);font-weight:600}
+.nav-item .ico{width:18px;text-align:center;flex-shrink:0}
+.nav-item .badge{margin-left:auto;background:var(--red);color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600}
+.main{flex:1;padding:24px 28px;max-width:calc(100vw - var(--sidebar-w));overflow-x:hidden}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
+.page-head h2{font-size:22px;font-weight:600}
+.page-head p{color:var(--text-2);font-size:13px;margin-top:2px}
+
+/* ---------- Components ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.grid{display:grid;gap:16px}
+.kpi-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.kpi{padding:18px 20px}
+.kpi .label{font-size:12.5px;color:var(--text-2);display:flex;align-items:center;gap:7px}
+.kpi .ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.kpi .val{font-size:28px;font-weight:600;margin-top:8px;letter-spacing:-.5px}
+.kpi .sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius);font-size:14px;font-weight:600;transition:.15s;border:1px solid transparent}
+.btn-primary{background:var(--red);color:#fff}
+.btn-primary:hover{background:var(--red-dark)}
+.btn-ghost{background:var(--surface);border-color:var(--border-strong);color:var(--text)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-sm{padding:5px 11px;font-size:13px}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{filter:brightness(.92)}
+.btn-danger{background:var(--surface);border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red-soft)}
+
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+.search .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3)}
+select.filter{padding:8px 12px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;padding:11px 14px;background:var(--surface-2);color:var(--text-2);font-weight:600;font-size:12.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface-2)}
+.avatar-cell{display:flex;align-items:center;gap:10px}
+.avatar-sm{width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:11px;font-size:12px;font-weight:600}
+.pill-green{background:rgba(16,124,16,.12);color:var(--green)}
+.pill-red{background:var(--red-soft);color:var(--red)}
+.pill-amber{background:rgba(193,156,0,.14);color:var(--amber)}
+.pill-blue{background:rgba(0,120,212,.12);color:var(--blue)}
+.pill-grey{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.lic-basic{background:rgba(0,120,212,.1);color:var(--blue)}
+.lic-standard{background:rgba(138,0,25,.1);color:var(--red)}
+.lic-none{background:var(--surface-2);color:var(--text-3);border:1px solid var(--border)}
+
+.row-actions{display:flex;gap:4px;opacity:.4;transition:.15s}
+tr:hover .row-actions{opacity:1}
+.icon-act{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+.icon-act:hover{background:var(--red-soft);color:var(--red)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal{background:var(--surface);border-radius:8px;box-shadow:var(--shadow-lg);width:100%;max-width:640px;max-height:90vh;overflow-y:auto}
+.modal.wide{max-width:820px}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:2}
+.modal-head h3{font-size:18px;font-weight:600}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;position:sticky;bottom:0;background:var(--surface)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)}
+.field .req{color:var(--red)}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+.field textarea{resize:vertical;min-height:70px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field .hint{font-size:12px;color:var(--text-3);margin-top:4px}
+
+/* Wizard */
+.stepper{display:flex;gap:0;margin-bottom:24px;overflow-x:auto}
+.step{display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--text-3);font-size:13px;white-space:nowrap;position:relative}
+.step .num{width:24px;height:24px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.step.active{color:var(--red);font-weight:600}
+.step.active .num{background:var(--red);color:#fff;border-color:var(--red)}
+.step.done .num{background:var(--green);color:#fff;border-color:var(--green)}
+.check-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+.check-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.15s}
+.check-item:hover{background:var(--surface-2)}
+.check-item.sel{border-color:var(--red);background:var(--red-soft)}
+.check-item input{width:17px;height:17px;accent-color:var(--red)}
+.check-item .desc{font-size:12px;color:var(--text-3)}
+.lic-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lic-card{border:2px solid var(--border);border-radius:8px;padding:18px;cursor:pointer;transition:.15s}
+.lic-card:hover{border-color:var(--border-strong)}
+.lic-card.sel{border-color:var(--red);background:var(--red-soft)}
+.lic-card h4{font-size:15px;margin-bottom:4px}
+.lic-card .price{font-size:24px;font-weight:600;color:var(--red);margin:8px 0}
+.lic-card .price span{font-size:13px;color:var(--text-3);font-weight:400}
+.lic-card ul{list-style:none;font-size:12.5px;color:var(--text-2);margin-top:8px}
+.lic-card li{padding:2px 0;padding-left:18px;position:relative}
+.lic-card li:before{content:"✓";position:absolute;left:0;color:var(--green)}
+.review-box{background:var(--surface-2);border-radius:var(--radius);padding:16px 18px}
+.review-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.review-row:last-child{border:none}
+.review-row .k{color:var(--text-2)}
+.review-row .v{font-weight:600;text-align:right}
+
+/* Detail rows */
+.detail-grid{display:grid;grid-template-columns:auto 1fr;gap:10px 20px;font-size:13.5px}
+.detail-grid .k{color:var(--text-2)}
+.credbox{background:var(--surface-2);border:1px dashed var(--red);border-radius:var(--radius);padding:16px;margin-top:8px}
+.credbox .cred-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-family:'Consolas',monospace;font-size:14px}
+.credbox .copy{font-size:12px;font-family:var(--font)}
+
+/* Empty & toast */
+.empty{text-align:center;padding:50px 20px;color:var(--text-3)}
+.empty .ico{font-size:40px;margin-bottom:12px;opacity:.5}
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:13px 18px;min-width:280px;display:flex;gap:11px;align-items:flex-start;animation:slidein .3s}
+.toast.err{border-left-color:var(--red)}
+.toast.info{border-left-color:var(--blue)}
+@keyframes slidein{from{transform:translateX(120%)}to{transform:translateX(0)}}
+.toast .t-title{font-weight:600;font-size:13.5px}
+.toast .t-msg{font-size:12.5px;color:var(--text-2)}
+
+.section-title{font-size:16px;font-weight:600;margin:24px 0 12px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.activity-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px}
+.activity-item:last-child{border:none}
+.activity-item .dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.activity-item .meta{color:var(--text-3);font-size:12px}
+.chart-bar{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:10px}
+.chart-bar .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.chart-bar .bar{width:70%;background:var(--red);border-radius:4px 4px 0 0;min-height:4px;transition:.3s}
+.chart-bar .bar-lbl{font-size:11px;color:var(--text-3)}
+
+@media(max-width:820px){
+  .sidebar{position:fixed;left:0;top:48px;z-index:40;transform:translateX(-100%);transition:.2s;box-shadow:var(--shadow-lg)}
+  .sidebar.open{transform:translateX(0)}
+  .main{max-width:100vw;padding:16px}
+  .field-row,.two-col,.lic-cards{grid-template-columns:1fr}
+  .menu-toggle{display:flex!important}
+}
+.menu-toggle{display:none}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-logo"><div class="mark">S</div><h1>Selcap Cloud Manager</h1></div>
+    <p class="login-sub">Secure Microsoft 365 self-service portal</p>
+    <button class="ms-btn" onclick="SCM.msLogin()">
+      <span class="ms-logo"><span style="background:#f25022"></span><span style="background:#7fba00"></span><span style="background:#00a4ef"></span><span style="background:#ffb900"></span></span>
+      Sign in with Microsoft
+    </button>
+    <div class="demo-note">
+      <b>Demo mode</b> — pick a user to preview their view. Live sign-in activates once the Microsoft app registration is connected.
+      <div class="demo-users" id="demoUsers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+  <div class="topbar">
+    <button class="icon-btn menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <div class="brand"><div class="mark">S</div><span>Selcap Cloud Manager</span></div>
+    <div class="spacer"></div>
+    <div class="company-pill" id="companyPill" onclick="SCM.openCompanySwitch()"></div>
+    <button class="icon-btn" onclick="SCM.toggleTheme()" title="Toggle theme" id="themeBtn">◐</button>
+    <button class="icon-btn" title="Sign out" onclick="SCM.logout()">⏻</button>
+    <div class="avatar" id="topAvatar"></div>
+  </div>
+  <div class="layout">
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-wrap"></div>
+
+<script>
+const SEED_USERS = [{"name":"Aaron Wright","email":"aaron@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2022-12-21","license":"Business Basic","status":"Active"},{"name":"Admin YEC Management","email":"admin@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-24","license":"Business Basic","status":"Active"},{"name":"Administration","email":"admin@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2022-11-15","license":"Business Basic","status":"Active"},{"name":"Ajay Kawa","email":"ajay@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2021-03-18","license":"Business Basic","status":"Active"},{"name":"Ajay Kawa","email":"ajay@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2023-11-30","license":"Unlicensed","status":"Active"},{"name":"Ajay Kawa","email":"ajay.kawa@selcapgroup.com","domain":"selcapgroup.com","company":"SelCap Group","title":"","department":"","office":"","mobile":"","created":"2023-07-31","license":"Business Basic","status":"Active"},{"name":"Ajay Kawa","email":"ajay.kawa@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-02","license":"Unlicensed","status":"Active"},{"name":"Alia Taub","email":"alia@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2021-03-24","license":"Business Standard","status":"Active"},{"name":"Anne Brown","email":"anne.brown@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-05-07","license":"Unlicensed","status":"Active"},{"name":"askelectrotec","email":"askelectrotec_gmail.com#EXT#@catoservicesuk.onmicrosoft.com","domain":"catoservicesuk.onmicrosoft.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-07-03","license":"Unlicensed","status":"Active"},{"name":"Bronte  Chittenden","email":"bronte@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-05-18","license":"Business Standard","status":"Active"},{"name":"Brooke Steel","email":"brooke.steel@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2026-04-29","license":"Business Standard","status":"Active"},{"name":"Callum Pallister","email":"callum.pallister@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-01-15","license":"Business Standard","status":"Active"},{"name":"Cato Office Printer","email":"printer@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2025-10-22","license":"Business Basic","status":"Active"},{"name":"Cato Services","email":"hello@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2021-03-24","license":"Unlicensed","status":"Active"},{"name":"Cato Services","email":"thg@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2025-01-21","license":"Business Basic","status":"Active"},{"name":"Chanlon Property Management","email":"admin@chanlonproperty.com","domain":"chanlonproperty.com","company":"Chanlon Property","title":"","department":"","office":"","mobile":"","created":"2025-01-17","license":"Business Basic","status":"Active"},{"name":"Chris Robson","email":"chris.robson@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-02","license":"Business Standard","status":"Active"},{"name":"Colin Middlemass","email":"colin.middlemass@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2023-12-01","license":"Business Standard","status":"Active"},{"name":"Commercial","email":"commercial@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-01-08","license":"Unlicensed","status":"Active"},{"name":"Dan Dunne","email":"dan@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2023-07-31","license":"Business Standard","status":"Active"},{"name":"Daniel  Howard","email":"danny@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2025-08-11","license":"Business Standard","status":"Active"},{"name":"David Miles","email":"david.miles@winsleygroup.co.uk","domain":"winsleygroup.co.uk","company":"Winsley Group","title":"","department":"","office":"","mobile":"","created":"2023-08-02","license":"Unlicensed","status":"Active"},{"name":"David Miles","email":"david.miles@selcapgroup.com","domain":"selcapgroup.com","company":"SelCap Group","title":"","department":"","office":"","mobile":"","created":"2023-07-31","license":"Business Standard","status":"Active"},{"name":"Debbie Allen","email":"debbie.allen@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-07-07","license":"Business Standard","status":"Active"},{"name":"Deborah Middlemass","email":"deborah.middlemass@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-05-07","license":"Unlicensed","status":"Active"},{"name":"Enquiries Home Site Group CIC","email":"enquiries2@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-11-05","license":"Business Basic","status":"Active"},{"name":"Enquiries Home Site Group CIC","email":"enquiries@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2024-04-16","license":"Business Standard","status":"Active"},{"name":"Enquiries Home Site Group CIC","email":"enquiries3@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-11-05","license":"Business Basic","status":"Active"},{"name":"Ethan Purvis","email":"ethan.purvis@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-03-05","license":"Business Standard","status":"Active"},{"name":"Farah Ali","email":"farah@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2024-12-02","license":"Business Standard","status":"Active"},{"name":"farha.ali8","email":"farha.ali8_gmail.com#EXT#@catoservicesuk.onmicrosoft.com","domain":"catoservicesuk.onmicrosoft.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-07-13","license":"Unlicensed","status":"Active"},{"name":"Finance Department","email":"finance@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-07-21","license":"Business Basic","status":"Active"},{"name":"Fiona Kumar","email":"fiona@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2023-11-21","license":"Unlicensed","status":"Active"},{"name":"Gary Gibbs","email":"gary.gibbs@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-07-09","license":"Business Standard","status":"Active"},{"name":"James Page- HomeSite Group CIC","email":"james.page@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-01-15","license":"Business Standard","status":"Active"},{"name":"Janine","email":"janine@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-02-26","license":"Business Standard","status":"Active"},{"name":"Jasmine Farnen","email":"jasmine.farnen@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-19","license":"Business Standard","status":"Active"},{"name":"Joanne Hughes","email":"joanne.hughes@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2024-10-29","license":"Business Standard","status":"Active"},{"name":"John Hamilton","email":"John.hamilton@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2024-07-09","license":"Business Basic","status":"Active"},{"name":"John Hamilton","email":"john.hamilton@selcapgroup.com","domain":"selcapgroup.com","company":"SelCap Group","title":"","department":"","office":"","mobile":"","created":"2024-07-09","license":"Unlicensed","status":"Active"},{"name":"John Hamilton","email":"john.hamilton@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-09","license":"Unlicensed","status":"Active"},{"name":"Kamran Bhatti","email":"kamran@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2024-06-11","license":"Business Standard","status":"Active"},{"name":"Karan Kumar","email":"karan@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2022-10-31","license":"Business Standard","status":"Active"},{"name":"Karim Admadi","email":"karim@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2023-01-05","license":"Business Standard","status":"Active"},{"name":"Kelly Underwood","email":"kelly.underwood@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-19","license":"Business Standard","status":"Active"},{"name":"Kelsey Shepherd","email":"kelsey.shepherd@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2024-07-30","license":"Business Standard","status":"Active"},{"name":"Ken Newton","email":"ken.newton@selcapgroup.com","domain":"selcapgroup.com","company":"SelCap Group","title":"","department":"","office":"","mobile":"","created":"2026-05-08","license":"Business Standard","status":"Active"},{"name":"Kevin Morrow","email":"kevin.morrow@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2023-12-01","license":"Business Basic","status":"Active"},{"name":"Layla Langlands","email":"layla.langlands@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2024-07-30","license":"Business Standard","status":"Active"},{"name":"layla.langlands","email":"layla.langlands_mearsgroup.co.uk#EXT#@catoservicesuk.onmicrosoft.com","domain":"catoservicesuk.onmicrosoft.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-23","license":"Unlicensed","status":"Active"},{"name":"Leah Hart","email":"leah.hart@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-11-18","license":"Business Standard","status":"Active"},{"name":"Lee Allen","email":"lee.allen@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-02","license":"Business Basic","status":"Active"},{"name":"Lennie Warner","email":"lennie.warner@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-19","license":"Business Standard","status":"Active"},{"name":"Luke Smith","email":"luke.smith@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-02","license":"Business Standard","status":"Active"},{"name":"Luke Walmsley","email":"luke.walmsley@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-06-04","license":"Business Standard","status":"Active"},{"name":"Manish Suchde","email":"manish@selcapgroup.com","domain":"selcapgroup.com","company":"SelCap Group","title":"","department":"","office":"","mobile":"","created":"2026-04-28","license":"Business Basic","status":"Active"},{"name":"Maria Routledge","email":"maria.routledge@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-02-02","license":"Business Standard","status":"Active"},{"name":"Megan Dyson","email":"megan.dyson@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-02","license":"Business Standard","status":"Active"},{"name":"NWE THG","email":"nwe@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2025-10-29","license":"Business Basic","status":"Active"},{"name":"Peter Baldwin","email":"peter@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-05-18","license":"Business Standard","status":"Active"},{"name":"Raj Kumar","email":"raj@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2021-05-27","license":"Business Basic","status":"Active"},{"name":"Raj Kumar","email":"raj@selcapgroup.com","domain":"selcapgroup.com","company":"SelCap Group","title":"","department":"","office":"","mobile":"","created":"2023-07-31","license":"Business Basic","status":"Active"},{"name":"Raj Kumar","email":"raj@thincdigital.co.uk","domain":"thincdigital.co.uk","company":"Thinc Digital","title":"","department":"","office":"","mobile":"","created":"2024-08-20","license":"Business Basic","status":"Active"},{"name":"Raj Kumar","email":"raj@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-07-02","license":"Unlicensed","status":"Active"},{"name":"Riverside DMC","email":"riverside-dmc@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-24","license":"Business Basic","status":"Active"},{"name":"Riverside Majors","email":"riverside-majors@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-24","license":"Business Basic","status":"Active"},{"name":"Riverside Repairs","email":"riverside-repairs@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-24","license":"Business Basic","status":"Active"},{"name":"Riverside Voids","email":"riverside-voids@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-24","license":"Business Basic","status":"Active"},{"name":"Robin Brambley","email":"rob@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2025-01-06","license":"Business Standard","status":"Active"},{"name":"Shay Manser","email":"shay.manser@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-06-19","license":"Business Standard","status":"Active"},{"name":"Sophie Britten","email":"sophie.britten@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-09-12","license":"Business Standard","status":"Active"},{"name":"Sophie Taylor","email":"sophie.taylor@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-04-28","license":"Business Standard","status":"Active"},{"name":"Steve Wilson","email":"steve.wilson@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-07-30","license":"Business Standard","status":"Active"},{"name":"Stevenson Carpets YEC","email":"sc@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-01-22","license":"Business Basic","status":"Active"},{"name":"Surveying Team","email":"surveyingteam@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-02-18","license":"Business Basic","status":"Active"},{"name":"Tom Brown","email":"tom.brown@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2023-12-01","license":"Business Standard","status":"Active"},{"name":"Uzair  Ali","email":"uzair@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-02-12","license":"Business Basic","status":"Active"},{"name":"Voids","email":"voids@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2025-03-19","license":"Business Basic","status":"Active"},{"name":"Yasmin Seymour-Brown- HomeSite Group CIC","email":"yasmin.seymourbrown@homesitegroup.com","domain":"homesitegroup.com","company":"HomeSite Group","title":"","department":"","office":"","mobile":"","created":"2025-02-20","license":"Business Standard","status":"Active"},{"name":"YEC Compliance","email":"compliance@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2024-11-11","license":"Business Basic","status":"Active"},{"name":"YEC Printer","email":"printer@yecmanagement.com","domain":"yecmanagement.com","company":"YEC Management","title":"","department":"","office":"","mobile":"","created":"2026-07-16","license":"Business Basic","status":"Active"},{"name":"Ziyon Stephenson-Campbell","email":"ziyon@catoservices.com","domain":"catoservices.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2025-02-18","license":"Business Standard","status":"Active"},{"name":"zoe.clapham2","email":"zoe.clapham2_nhs.net#EXT#@catoservicesuk.onmicrosoft.com","domain":"catoservicesuk.onmicrosoft.com","company":"Cato Services","title":"","department":"","office":"","mobile":"","created":"2026-07-16","license":"Unlicensed","status":"Active"}];
+</script>
+<script>
+/* ================= Selcap Cloud Manager ================= */
+window.SCM = (function(){
+'use strict';
+
+// ---------- Company config ----------
+const COMPANIES = {
+  'Cato Services':     {domain:'catoservices.com',   colour:'#b00020', mgmtFee:450, supportFee:180},
+  'HomeSite Group':    {domain:'homesitegroup.com',  colour:'#0f6cbd', mgmtFee:380, supportFee:150},
+  'YEC Management':    {domain:'yecmanagement.com',  colour:'#107c10', mgmtFee:380, supportFee:150},
+  'SelCap Group':      {domain:'selcapgroup.com',    colour:'#5c2d91', mgmtFee:300, supportFee:120},
+  'Chanlon Property':  {domain:'chanlonproperty.com',colour:'#c19c00', mgmtFee:250, supportFee:100},
+  'Winsley Group':     {domain:'winsleygroup.co.uk', colour:'#008272', mgmtFee:250, supportFee:100},
+  'Thinc Digital':     {domain:'thincdigital.co.uk', colour:'#e3008c', mgmtFee:250, supportFee:100},
+};
+const LICENCE_PRICE = {'Business Basic':4.90,'Business Standard':10.30,'Unlicensed':0};
+
+// ---------- Roles / admins (seeded) ----------
+// email -> {role, name, company, super?}
+const ACCOUNTS = {
+  'ajay@catoservices.com':      {name:'Ajay Kawa',    role:'super',   company:'Cato Services'},
+  'peter@catoservices.com':     {name:'Peter Baldwin',role:'admin',   company:'Cato Services'},
+  'kevin@homesitegroup.com':    {name:'Kevin Morrow', role:'admin',   company:'HomeSite Group'},
+  'lee@yecmanagement.com':      {name:'Lee Allen',    role:'admin',   company:'YEC Management'},
+  'raj@selcapgroup.com':        {name:'Raj Kumar',    role:'admin',   company:'SelCap Group'},
+};
+// Ajay is also admin for Chanlon, SelCap, Thinc — as super he sees all anyway.
+
+// ---------- State ----------
+let S = {
+  user:null,            // current signed-in account
+  activeCompany:null,   // company being viewed (super can switch)
+  page:'dashboard',
+  users:[],             // working copy of users
+  requests:[],
+  audit:[],
+  sortKey:'name', sortDir:1,
+  search:'', filterStatus:'all', filterLicence:'all',
+};
+
+// ---------- Persistence (localStorage disabled in artifact; in-memory) ----------
+function seedData(){
+  S.users = SEED_USERS.map((u,i)=>({id:'u'+i, ...u}));
+  S.requests = SAMPLE_REQUESTS();
+  S.audit = SAMPLE_AUDIT();
+}
+
+// ---------- Helpers ----------
+const $ = s=>document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const initials = n=>n.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+const esc = s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = n=>'£'+n.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = ()=>new Date().toISOString().slice(0,10);
+const now = ()=>new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function colourFor(name){const c=name.split('').reduce((a,ch)=>a+ch.charCodeAt(0),0);const h=['#b00020','#0f6cbd','#107c10','#5c2d91','#c19c00','#008272','#e3008c','#ca5010'];return h[c%h.length];}
+
+// visible users respecting company isolation
+function visibleUsers(){
+  const list = S.user.role==='super' ? S.users.filter(u=>u.company===S.activeCompany) : S.users.filter(u=>u.company===S.user.company);
+  return list;
+}
+function companyUsers(name){return S.users.filter(u=>u.company===name);}
+
+// ---------- Auth ----------
+function buildDemoUsers(){
+  const box=$('#demoUsers');
+  const demos=[
+    ['ajay@catoservices.com','Super Administrator — all companies'],
+    ['kevin@homesitegroup.com','Company Admin — HomeSite Group'],
+    ['lee@yecmanagement.com','Company Admin — YEC Management'],
+    ['peter@catoservices.com','Company Admin — Cato Services'],
+  ];
+  demos.forEach(([email,desc])=>{
+    const a=ACCOUNTS[email];
+    const b=el('button',null,`<b>${a.name}</b><div class="r">${desc}</div>`);
+    b.onclick=()=>doLogin(email);
+    box.appendChild(b);
+  });
+}
+function msLogin(){
+  toast('info','Microsoft sign-in not yet connected','Complete the app registration step, then this button signs in real users. Use a demo profile below for now.');
+}
+function doLogin(email){
+  const acc=ACCOUNTS[email]; if(!acc)return;
+  S.user=acc;
+  S.activeCompany = acc.company;
+  $('#login').style.display='none';
+  $('#app').style.display='block';
+  $('#topAvatar').textContent=initials(acc.name);
+  renderNav(); updateCompanyPill(); go('dashboard');
+  audit('Signed in', '—', '—');
+}
+function logout(){ S.user=null; $('#app').style.display='none'; $('#login').style.display='flex'; }
+
+// ---------- Company switch (super only) ----------
+function updateCompanyPill(){
+  const pill=$('#companyPill');
+  if(S.user.role==='super'){
+    pill.innerHTML=`<span>🏢</span> ${esc(S.activeCompany)} <span style="opacity:.7">▾</span>`;
+    pill.style.cursor='pointer';
+  } else {
+    pill.innerHTML=`<span>🏢</span> ${esc(S.user.company)}`;
+    pill.style.cursor='default';
+  }
+}
+function openCompanySwitch(){
+  if(S.user.role!=='super')return;
+  const rows=Object.keys(COMPANIES).map(name=>{
+    const n=companyUsers(name).length;
+    return `<div class="check-item ${name===S.activeCompany?'sel':''}" onclick="SCM.switchCompany('${name}')">
+      <div class="avatar-sm" style="background:${COMPANIES[name].colour}">${initials(name)}</div>
+      <div style="flex:1"><b>${esc(name)}</b><div class="desc">${COMPANIES[name].domain} · ${n} users</div></div>
+    </div>`;
+  }).join('');
+  modal('Switch company',`<div class="check-list">${rows}</div>`,null,'');
+}
+function switchCompany(name){ S.activeCompany=name; closeModal(); updateCompanyPill(); go(S.page); }
+
+// ---------- Navigation ----------
+const NAV=[
+  {group:'Overview',items:[
+    {id:'dashboard',label:'Dashboard',ico:'▦'},
+    {id:'users',label:'User Management',ico:'👤'},
+    {id:'requests',label:'Request Centre',ico:'📥',badge:true},
+    {id:'reports',label:'Reports',ico:'📊'},
+  ]},
+  {group:'Administration',items:[
+    {id:'companies',label:'Companies',ico:'🏢',super:true},
+    {id:'billing',label:'Billing',ico:'💷'},
+    {id:'audit',label:'Audit Log',ico:'📋'},
+    {id:'settings',label:'Settings',ico:'⚙️',super:true},
+  ]},
+];
+function renderNav(){
+  const nav=$('#sidebar'); nav.innerHTML='';
+  NAV.forEach(g=>{
+    const items=g.items.filter(i=>!i.super || S.user.role==='super');
+    if(!items.length)return;
+    nav.appendChild(el('div','nav-group-label',g.group));
+    items.forEach(i=>{
+      const pend=S.requests.filter(r=>r.status==='Pending' && (S.user.role==='super'||r.company===S.user.company)).length;
+      const badge=i.badge&&pend?`<span class="badge">${pend}</span>`:'';
+      const d=el('div','nav-item'+(S.page===i.id?' active':''),`<span class="ico">${i.ico}</span><span>${i.label}</span>${badge}`);
+      d.onclick=()=>{go(i.id);document.querySelector('.sidebar').classList.remove('open');};
+      nav.appendChild(d);
+    });
+  });
+}
+function go(page){ S.page=page; S.search=''; renderNav(); PAGES[page](); window.scrollTo(0,0); }
+
+// ---------- Theme ----------
+function toggleTheme(){
+  const h=document.documentElement;
+  h.setAttribute('data-theme', h.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+
+// ---------- Toast ----------
+function toast(type,title,msg){
+  const t=el('div','toast '+(type==='error'?'err':type),
+    `<div style="font-size:16px">${type==='error'?'⚠️':type==='info'?'ℹ️':'✅'}</div>
+     <div><div class="t-title">${esc(title)}</div>${msg?`<div class="t-msg">${esc(msg)}</div>`:''}</div>`);
+  $('#toast-wrap').appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='.3s';setTimeout(()=>t.remove(),300);},4200);
+}
+
+// ---------- Modal ----------
+function modal(title,body,footer,size){
+  const root=$('#modal-root');
+  root.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)SCM.closeModal()">
+    <div class="modal ${size||''}">
+      <div class="modal-head"><h3>${esc(title)}</h3><button class="icon-act" onclick="SCM.closeModal()">✕</button></div>
+      <div class="modal-body">${body}</div>
+      ${footer!==null?`<div class="modal-foot">${footer||''}</div>`:''}
+    </div></div>`;
+}
+function closeModal(){ $('#modal-root').innerHTML=''; }
+
+// ---------- Audit ----------
+function audit(action,before,after,extra){
+  S.audit.unshift({
+    id:'a'+Date.now(), who:S.user.name, company:S.activeCompany||S.user.company,
+    date:now(), ip:'82.14.'+Math.floor(Math.random()*255)+'.'+Math.floor(Math.random()*255),
+    action, before, after, status:'Success', graph: extra||'—'
+  });
+}
+
+// expose
+return {
+  S, COMPANIES, LICENCE_PRICE, ACCOUNTS,
+  seedData, buildDemoUsers, msLogin, doLogin, logout,
+  updateCompanyPill, openCompanySwitch, switchCompany,
+  renderNav, go, toggleTheme, toast, modal, closeModal, audit,
+  visibleUsers, companyUsers, initials, esc, money, colourFor, today, now,
+  // page + feature fns attached below
+  _:{ $, el, initials, esc, money, today, now, colourFor, visibleUsers, companyUsers, seedData }
+};
+})();
+
+/* ============ PAGES & FEATURES (attached to SCM) ============ */
+
+/* ============ Sample data generators ============ */
+function SAMPLE_REQUESTS(){
+  return [
+    {id:'r1',type:'New User',company:'HomeSite Group',target:'Sarah Jenkins',by:'Kevin Morrow',date:'26 Jul 2026, 09:14',status:'Pending',licence:'Business Standard',comments:'New starter — Operations, starts Monday'},
+    {id:'r2',type:'Password Reset',company:'YEC Management',target:'David Owen',by:'Lee Allen',date:'27 Jul 2026, 14:02',status:'Pending',licence:'—',comments:'User locked out'},
+    {id:'r3',type:'Licence Upgrade',company:'HomeSite Group',target:'James Hill',by:'Kevin Morrow',date:'27 Jul 2026, 16:40',status:'Pending',licence:'Basic → Standard',comments:'Needs desktop Office'},
+    {id:'r4',type:'Disable User',company:'Cato Services',target:'Mark Peters',by:'Peter Baldwin',date:'25 Jul 2026, 11:20',status:'Approved',licence:'—',comments:'Left the business'},
+    {id:'r5',type:'New User',company:'YEC Management',target:'Priya Shah',by:'Lee Allen',date:'24 Jul 2026, 10:05',status:'Approved',licence:'Business Basic',comments:''},
+    {id:'r6',type:'Password Reset',company:'HomeSite Group',target:'Anna Cole',by:'Kevin Morrow',date:'23 Jul 2026, 08:50',status:'Rejected',licence:'—',comments:'Duplicate request'},
+  ];
+}
+function SAMPLE_AUDIT(){
+  return [
+    {id:'a1',who:'Peter Baldwin',company:'Cato Services',date:'25 Jul 2026, 11:22',ip:'82.14.9.31',action:'Disabled user Mark Peters',before:'Active',after:'Disabled',status:'Success',graph:'204 No Content'},
+    {id:'a2',who:'Ajay Kawa',company:'YEC Management',date:'24 Jul 2026, 10:07',ip:'82.14.9.31',action:'Created user Priya Shah',before:'—',after:'priya@yecmanagement.com',status:'Success',graph:'201 Created'},
+    {id:'a3',who:'Ajay Kawa',company:'HomeSite Group',date:'23 Jul 2026, 09:00',ip:'82.14.9.31',action:'Rejected request (Password Reset — Anna Cole)',before:'Pending',after:'Rejected',status:'Success',graph:'—'},
+  ];
+}
+
+/* ============ PAGE RENDERERS ============ */
+const PAGES = {};
+(function(){
+const {$, el, initials, esc, money, today, now, colourFor} = SCM._;
+const S = SCM.S, C = SCM.COMPANIES, LP = SCM.LICENCE_PRICE;
+const vis = ()=>SCM.visibleUsers();
+const activeCompanyName = ()=> S.user.role==='super'?S.activeCompany:S.user.company;
+
+function head(title,sub,actions){
+  return `<div class="page-head"><div><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap">${actions||''}</div></div>`;
+}
+function licPill(l){
+  const cls=l==='Business Standard'?'lic-standard':l==='Business Basic'?'lic-basic':'lic-none';
+  return `<span class="pill ${cls}">${esc(l)}</span>`;
+}
+function statusPill(s){
+  const m={Active:'pill-green',Disabled:'pill-red',Pending:'pill-amber',Approved:'pill-green',Rejected:'pill-red'};
+  return `<span class="pill ${m[s]||'pill-grey'}">${esc(s)}</span>`;
+}
+
+/* ---------- DASHBOARD ---------- */
+PAGES.dashboard=function(){
+  const u=vis();
+  const basic=u.filter(x=>x.license==='Business Basic').length;
+  const std=u.filter(x=>x.license==='Business Standard').length;
+  const shared=u.filter(x=>/admin|info|support|accounts|noreply|hello|sales/i.test(x.email)).length;
+  const pend=S.requests.filter(r=>r.status==='Pending'&&(S.user.role==='super'||r.company===S.user.company)).length;
+  const cost=u.reduce((a,x)=>a+(LP[x.license]||0),0);
+  const cn=activeCompanyName();
+  const kpi=(ico,bg,col,label,val,sub)=>`<div class="card kpi"><div class="label"><span class="ico" style="background:${bg};color:${col}">${ico}</span>${label}</div><div class="val">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+
+  const recentAct=S.audit.filter(a=>S.user.role==='super'||a.company===S.user.company).slice(0,5).map(a=>
+    `<div class="activity-item"><div class="dot" style="background:${a.status==='Success'?'var(--green)':'var(--red)'}"></div>
+      <div style="flex:1"><div>${esc(a.action)}</div><div class="meta">${esc(a.who)} · ${esc(a.date)}</div></div></div>`).join('')||'<div class="empty">No recent activity</div>';
+
+  const pendReq=S.requests.filter(r=>r.status==='Pending'&&(S.user.role==='super'||r.company===S.user.company)).slice(0,5).map(r=>
+    `<div class="activity-item"><div class="dot" style="background:var(--amber)"></div>
+      <div style="flex:1"><div><b>${esc(r.type)}</b> — ${esc(r.target)}</div><div class="meta">${esc(r.company)} · by ${esc(r.by)} · ${esc(r.date)}</div></div>
+      ${S.user.role==='super'?`<button class="btn btn-green btn-sm" onclick="SCM.reviewRequest('${r.id}')">Review</button>`:''}</div>`).join('')||'<div class="empty" style="padding:20px">No pending requests 🎉</div>';
+
+  // licence mix mini chart
+  const maxL=Math.max(basic,std,1);
+  $('#main').innerHTML = head('Dashboard', cn+' · '+u.length+' users', S.user.role!=='super'?'<button class="btn btn-primary" onclick="SCM.startNewUser()">＋ New user request</button>':'')+`
+    <div class="grid kpi-grid" style="margin-bottom:20px">
+      ${kpi('👥','var(--red-soft)','var(--red)','Current Users',u.length,'')}
+      ${kpi('B','rgba(0,120,212,.12)','var(--blue)','Business Basic',basic,money(basic*LP['Business Basic'])+'/mo')}
+      ${kpi('S','var(--red-soft)','var(--red)','Business Standard',std,money(std*LP['Business Standard'])+'/mo')}
+      ${kpi('📮','var(--surface-2)','var(--text-2)','Shared Mailboxes',shared,'')}
+      ${kpi('⏳','rgba(193,156,0,.14)','var(--amber)','Pending Requests',pend,'')}
+      ${kpi('💷','rgba(16,124,16,.12)','var(--green)','Monthly Licence Cost',money(cost),'')}
+    </div>
+    <div class="two-col">
+      <div class="card" style="padding:18px 20px">
+        <div class="section-title" style="margin-top:0">Pending requests</div>${pendReq}
+      </div>
+      <div class="card" style="padding:18px 20px">
+        <div class="section-title" style="margin-top:0">Recent activity</div>${recentAct}
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="card" style="padding:18px 20px">
+        <div class="section-title" style="margin-top:0">Licence mix</div>
+        <div class="chart-bar">
+          <div class="bar-col"><div class="bar" style="height:${basic/maxL*100}%;background:var(--blue)"></div><div class="bar-lbl">Basic (${basic})</div></div>
+          <div class="bar-col"><div class="bar" style="height:${std/maxL*100}%"></div><div class="bar-lbl">Standard (${std})</div></div>
+          <div class="bar-col"><div class="bar" style="height:${(u.length-basic-std)/maxL*100}%;background:var(--text-3)"></div><div class="bar-lbl">Unlicensed (${u.length-basic-std})</div></div>
+        </div>
+      </div>
+      <div class="card" style="padding:18px 20px">
+        <div class="section-title" style="margin-top:0">Quick actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost" style="justify-content:flex-start" onclick="SCM.startNewUser()">👤 New user request</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start" onclick="SCM.go('users')">🔍 View all users</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start" onclick="SCM.startOffboard()">🚪 Offboard employee</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start" onclick="SCM.go('reports')">📊 Run a report</button>
+        </div>
+      </div>
+    </div>`;
+};
+
+/* ---------- USER MANAGEMENT ---------- */
+PAGES.users=function(){
+  const actions=`<button class="btn btn-ghost" onclick="SCM.exportUsers()">⬇ Export</button>
+    <button class="btn btn-primary" onclick="SCM.startNewUser()">＋ New user</button>`;
+  $('#main').innerHTML=head('User Management', activeCompanyName(), actions)+`
+    <div class="toolbar">
+      <div class="search"><span class="ico">🔍</span><input id="userSearch" placeholder="Search name, email, department…" oninput="SCM.userSearch(this.value)"></div>
+      <select class="filter" onchange="SCM.setFilter('filterStatus',this.value)">
+        <option value="all">All statuses</option><option value="Active">Active</option><option value="Disabled">Disabled</option>
+      </select>
+      <select class="filter" onchange="SCM.setFilter('filterLicence',this.value)">
+        <option value="all">All licences</option><option value="Business Basic">Basic</option><option value="Business Standard">Standard</option><option value="Unlicensed">Unlicensed</option>
+      </select>
+    </div>
+    <div id="userTable"></div>`;
+  renderUserTable();
+};
+function renderUserTable(){
+  let list=vis();
+  if(S.search){const q=S.search.toLowerCase();list=list.filter(u=>(u.name+u.email+u.department+u.title).toLowerCase().includes(q));}
+  if(S.filterStatus!=='all')list=list.filter(u=>u.status===S.filterStatus);
+  if(S.filterLicence!=='all')list=list.filter(u=>u.license===S.filterLicence);
+  list.sort((a,b)=>{const x=(a[S.sortKey]||'').toString().toLowerCase(),y=(b[S.sortKey]||'').toString().toLowerCase();return x<y?-S.sortDir:x>y?S.sortDir:0;});
+  const arrow=k=>S.sortKey===k?(S.sortDir===1?' ▲':' ▼'):'';
+  const th=(k,l)=>`<th onclick="SCM.sortUsers('${k}')">${l}${arrow(k)}</th>`;
+  if(!list.length){$('#userTable').innerHTML='<div class="card empty"><div class="ico">👤</div>No users match your filters</div>';return;}
+  const rows=list.map(u=>`<tr>
+    <td><div class="avatar-cell"><div class="avatar-sm" style="background:${colourFor(u.name)}">${initials(u.name)}</div><div><div style="font-weight:600">${esc(u.name)}</div><div style="color:var(--text-3);font-size:12px">${esc(u.email)}</div></div></div></td>
+    <td>${esc(u.department||'—')}</td>
+    <td>${esc(u.title||'—')}</td>
+    <td>${licPill(u.license)}</td>
+    <td>${statusPill(u.status)}</td>
+    <td style="color:var(--text-3)">${esc(u.created||'—')}</td>
+    <td><div class="row-actions">
+      <button class="icon-act" title="View" onclick="SCM.viewUser('${u.id}')">👁</button>
+      <button class="icon-act" title="Reset password" onclick="SCM.requestReset('${u.id}')">🔑</button>
+      <button class="icon-act" title="${u.status==='Active'?'Disable':'Enable'}" onclick="SCM.toggleUser('${u.id}')">${u.status==='Active'?'🚫':'✅'}</button>
+    </div></td></tr>`).join('');
+  $('#userTable').innerHTML=`<div class="table-wrap"><table><thead><tr>
+    ${th('name','User')}${th('department','Department')}${th('title','Job Title')}${th('license','Licence')}${th('status','Status')}${th('created','Created')}<th>Actions</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    <p style="color:var(--text-3);font-size:12px;margin-top:10px">${list.length} of ${vis().length} users</p>`;
+}
+
+/* ---------- REQUEST CENTRE ---------- */
+PAGES.requests=function(){
+  const mine=S.requests.filter(r=>S.user.role==='super'||r.company===S.user.company);
+  const rows=mine.map(r=>`<tr>
+    <td><b>${esc(r.type)}</b></td>
+    <td>${esc(r.target)}</td>
+    ${S.user.role==='super'?`<td>${esc(r.company)}</td>`:''}
+    <td>${esc(r.by)}</td>
+    <td style="color:var(--text-3)">${esc(r.date)}</td>
+    <td>${statusPill(r.status)}</td>
+    <td><div class="row-actions">
+      ${r.status==='Pending'&&S.user.role==='super'?`<button class="btn btn-green btn-sm" onclick="SCM.reviewRequest('${r.id}')">Review</button>`:`<button class="icon-act" onclick="SCM.reviewRequest('${r.id}')">👁</button>`}
+    </div></td></tr>`).join('');
+  $('#main').innerHTML=head('Request Centre','Every change is a tracked request',S.user.role!=='super'?'<button class="btn btn-primary" onclick="SCM.startNewUser()">＋ New request</button>':'')+`
+    <div class="table-wrap"><table><thead><tr>
+      <th>Type</th><th>Target</th>${S.user.role==='super'?'<th>Company</th>':''}<th>Submitted by</th><th>Date</th><th>Status</th><th>Action</th>
+    </tr></thead><tbody>${rows||'<tr><td colspan="7"><div class="empty"><div class="ico">📥</div>No requests yet</div></td></tr>'}</tbody></table></div>`;
+};
+
+/* ---------- REPORTS ---------- */
+PAGES.reports=function(){
+  const u=vis();
+  const inactive=u.filter(x=>x.status==='Disabled').length;
+  const noMfa=Math.round(u.length*0.18);
+  const reports=[
+    ['Licence Usage','Basic vs Standard vs unlicensed breakdown','📊'],
+    ['Monthly Cost','Licence spend by company','💷'],
+    ['Inactive Users',inactive+' disabled accounts','😴'],
+    ['New Starters','Users created in last 30 days','🌱'],
+    ['Leavers','Recently offboarded users','👋'],
+    ['MFA Status',noMfa+' users without MFA','🔐'],
+    ['Shared Mailboxes','Shared & resource mailboxes','📮'],
+    ['Storage Usage','OneDrive & mailbox storage','💾'],
+  ];
+  $('#main').innerHTML=head('Reports',activeCompanyName())+`
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+    ${reports.map(([t,d,i])=>`<div class="card" style="padding:20px;cursor:pointer" onclick="SCM.toast('info','${esc(t)} report','Export to Excel, CSV or PDF once connected to live data.')">
+      <div style="font-size:26px;margin-bottom:8px">${i}</div>
+      <div style="font-weight:600;font-size:15px">${t}</div>
+      <div style="color:var(--text-2);font-size:13px;margin-top:4px">${d}</div>
+      <div style="margin-top:14px;display:flex;gap:6px">
+        <span class="pill pill-grey">Excel</span><span class="pill pill-grey">CSV</span><span class="pill pill-grey">PDF</span>
+      </div></div>`).join('')}
+    </div>`;
+};
+
+/* ---------- COMPANIES (super) ---------- */
+PAGES.companies=function(){
+  const rows=Object.keys(C).map(name=>{
+    const n=SCM.companyUsers(name).length;
+    const cost=SCM.companyUsers(name).reduce((a,x)=>a+(LP[x.license]||0),0);
+    return `<tr>
+      <td><div class="avatar-cell"><div class="avatar-sm" style="background:${C[name].colour}">${initials(name)}</div><b>${esc(name)}</b></div></td>
+      <td>${C[name].domain}</td><td>${n}</td><td>${money(cost)}</td>
+      <td>${money(cost+C[name].mgmtFee+C[name].supportFee)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="SCM.switchCompany('${name}')">Open</button></td></tr>`;
+  }).join('');
+  $('#main').innerHTML=head('Companies','Multi-company management','<button class="btn btn-primary" onclick="SCM.toast(\'info\',\'Add company\',\'Adds a new tenant domain — available in full build.\')">＋ Add company</button>')+`
+    <div class="table-wrap"><table><thead><tr><th>Company</th><th>Primary domain</th><th>Users</th><th>Licence cost/mo</th><th>Invoice total/mo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+};
+
+/* ---------- BILLING ---------- */
+PAGES.billing=function(){
+  const name=activeCompanyName();const cfg=C[name];
+  const u=SCM.companyUsers(name);
+  const licCost=u.reduce((a,x)=>a+(LP[x.license]||0),0);
+  const total=licCost+cfg.mgmtFee+cfg.supportFee;
+  const margin=cfg.mgmtFee+cfg.supportFee;
+  $('#main').innerHTML=head('Billing',name+' · monthly invoice','<button class="btn btn-primary" onclick="SCM.toast(\'info\',\'Invoice exported\',\'PDF invoice generated (demo).\')">⬇ Export invoice</button>')+`
+    <div class="grid kpi-grid" style="margin-bottom:20px">
+      <div class="card kpi"><div class="label">Users</div><div class="val">${u.length}</div></div>
+      <div class="card kpi"><div class="label">Licence cost</div><div class="val">${money(licCost)}</div></div>
+      <div class="card kpi"><div class="label">Invoice total</div><div class="val">${money(total)}</div></div>
+      <div class="card kpi"><div class="label">Profit margin</div><div class="val" style="color:var(--green)">${money(margin)}</div></div>
+    </div>
+    <div class="card" style="padding:22px;max-width:520px">
+      <div class="section-title" style="margin-top:0">Invoice breakdown — ${esc(name)}</div>
+      <div class="review-box">
+        <div class="review-row"><span class="k">Microsoft licences (${u.length} users)</span><span class="v">${money(licCost)}</span></div>
+        <div class="review-row"><span class="k">Monthly management fee</span><span class="v">${money(cfg.mgmtFee)}</span></div>
+        <div class="review-row"><span class="k">Support fee</span><span class="v">${money(cfg.supportFee)}</span></div>
+        <div class="review-row" style="font-size:15px"><span class="k"><b>Total (ex VAT)</b></span><span class="v">${money(total)}</span></div>
+      </div>
+    </div>`;
+};
+
+/* ---------- AUDIT ---------- */
+PAGES.audit=function(){
+  const list=S.audit.filter(a=>S.user.role==='super'||a.company===S.user.company);
+  const rows=list.map(a=>`<tr>
+    <td style="color:var(--text-3)">${esc(a.date)}</td>
+    <td>${esc(a.who)}</td>${S.user.role==='super'?`<td>${esc(a.company)}</td>`:''}
+    <td>${esc(a.action)}</td>
+    <td style="color:var(--text-3)">${esc(a.before)} → ${esc(a.after)}</td>
+    <td><span class="pill pill-green">${esc(a.status)}</span></td>
+    <td style="color:var(--text-3);font-family:monospace;font-size:12px">${esc(a.graph)}</td></tr>`).join('');
+  $('#main').innerHTML=head('Audit Log','Every action is recorded')+`
+    <div class="table-wrap"><table><thead><tr><th>Date/time</th><th>Who</th>${S.user.role==='super'?'<th>Company</th>':''}<th>Action</th><th>Before → After</th><th>Status</th><th>Graph response</th></tr></thead><tbody>${rows||'<tr><td colspan="7"><div class="empty">No audit entries</div></td></tr>'}</tbody></table></div>`;
+};
+
+/* ---------- SETTINGS (super) ---------- */
+PAGES.settings=function(){
+  $('#main').innerHTML=head('Settings','Platform & Microsoft Graph configuration')+`
+    <div class="card" style="padding:22px;max-width:640px;margin-bottom:16px">
+      <div class="section-title" style="margin-top:0">Microsoft Graph connection</div>
+      <div class="detail-grid">
+        <div class="k">Tenant</div><div>Cato Services (catoservices.com)</div>
+        <div class="k">App registration</div><div><span class="pill pill-amber">Not connected</span></div>
+        <div class="k">Client ID</div><div style="color:var(--text-3)">Add after registration</div>
+        <div class="k">Graph permissions</div><div style="color:var(--text-3)">User.ReadWrite.All, Group.ReadWrite.All, Directory.Read.All</div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="SCM.toast('info','Connection wizard','Follow the setup steps to connect Microsoft Graph.')">Connect Microsoft Graph</button>
+    </div>
+    <div class="card" style="padding:22px;max-width:640px">
+      <div class="section-title" style="margin-top:0">Security</div>
+      <div class="detail-grid">
+        <div class="k">Authentication</div><div>Microsoft Identity Platform (OAuth2 / OIDC)</div>
+        <div class="k">Session timeout</div><div>60 minutes</div>
+        <div class="k">Company isolation</div><div><span class="pill pill-green">Enforced by domain</span></div>
+        <div class="k">Rate limiting</div><div><span class="pill pill-green">On</span></div>
+      </div>
+    </div>`;
+};
+
+// expose page-related helpers to SCM
+Object.assign(SCM,{renderUserTable,statusPill,licPill,activeCompanyName});
+})();
+
+/* ============ INTERACTIVE FEATURES ============ */
+(function(){
+const {$, el, initials, esc, money, today, now} = SCM._;
+const S=SCM.S, C=SCM.COMPANIES, LP=SCM.LICENCE_PRICE;
+const activeCompanyName=()=>S.user.role==='super'?S.activeCompany:S.user.company;
+
+function genPassword(){
+  const w=['Harbour','Copper','Willow','Marble','Cinder','Verdant','Quartz','Meadow'];
+  return w[Math.floor(Math.random()*w.length)]+'-'+Math.floor(1000+Math.random()*9000)+'!';
+}
+function suggestEmails(first,last){
+  const dom=C[activeCompanyName()].domain;
+  first=first.toLowerCase().replace(/[^a-z]/g,'');last=last.toLowerCase().replace(/[^a-z]/g,'');
+  if(!first&&!last)return[];
+  return [`${first}.${last}@${dom}`,`${first}${last}@${dom}`,`${first[0]||''}${last}@${dom}`,`${first}@${dom}`];
+}
+
+/* ---------- NEW USER WIZARD ---------- */
+let W={};
+function startNewUser(){
+  W={step:1,first:'',last:'',display:'',title:'',dept:'',manager:'',office:'',phone:'',mobile:'',empno:'',
+     email:'',licence:'Business Standard',groups:[],mailboxes:[],teams:[]};
+  renderWizard();
+}
+const WIZ_STEPS=['Personal','Email','Licence','Groups','Mailboxes','Teams','Review'];
+function renderWizard(){
+  const stepper=WIZ_STEPS.map((s,i)=>{const n=i+1;const cls=n===W.step?'active':n<W.step?'done':'';
+    return `<div class="step ${cls}"><span class="num">${n<W.step?'✓':n}</span>${s}</div>`;}).join('');
+  let body='';
+  if(W.step===1)body=stepPersonal();
+  else if(W.step===2)body=stepEmail();
+  else if(W.step===3)body=stepLicence();
+  else if(W.step===4)body=stepGroups();
+  else if(W.step===5)body=stepMailboxes();
+  else if(W.step===6)body=stepTeams();
+  else body=stepReview();
+  const back=W.step>1?`<button class="btn btn-ghost" onclick="SCM.wizBack()">← Back</button>`:'<span></span>';
+  const next=W.step<7?`<button class="btn btn-primary" onclick="SCM.wizNext()">Continue →</button>`:`<button class="btn btn-primary" onclick="SCM.wizSubmit()">Submit request</button>`;
+  SCM.modal('New user request — '+activeCompanyName(),`<div class="stepper">${stepper}</div>${body}`,`${back}${next}`,'wide');
+}
+function stepPersonal(){return `
+  <div class="field-row"><div class="field"><label>First name <span class="req">*</span></label><input id="w_first" value="${esc(W.first)}" oninput="SCM.wizSet('first',this.value)"></div>
+  <div class="field"><label>Surname <span class="req">*</span></label><input id="w_last" value="${esc(W.last)}" oninput="SCM.wizSet('last',this.value)"></div></div>
+  <div class="field"><label>Display name</label><input value="${esc(W.display||((W.first+' '+W.last).trim()))}" oninput="SCM.wizSet('display',this.value)" placeholder="Auto from first + surname"></div>
+  <div class="field-row"><div class="field"><label>Job title</label><input value="${esc(W.title)}" oninput="SCM.wizSet('title',this.value)"></div>
+  <div class="field"><label>Department</label><input value="${esc(W.dept)}" oninput="SCM.wizSet('dept',this.value)"></div></div>
+  <div class="field-row"><div class="field"><label>Manager</label><input value="${esc(W.manager)}" oninput="SCM.wizSet('manager',this.value)"></div>
+  <div class="field"><label>Office</label><input value="${esc(W.office)}" oninput="SCM.wizSet('office',this.value)"></div></div>
+  <div class="field-row"><div class="field"><label>Mobile</label><input value="${esc(W.mobile)}" oninput="SCM.wizSet('mobile',this.value)"></div>
+  <div class="field"><label>Employee number</label><input value="${esc(W.empno)}" oninput="SCM.wizSet('empno',this.value)"></div></div>`;
+}
+function stepEmail(){
+  const sugg=suggestEmails(W.first,W.last);
+  const opts=sugg.map(e=>`<div class="check-item ${W.email===e?'sel':''}" onclick="SCM.wizSet('email','${e}');SCM.wizRefresh()">
+    <div style="flex:1"><b>${esc(e)}</b><div class="desc">✓ Available in Microsoft 365</div></div>
+    ${W.email===e?'<span class="pill pill-green">Selected</span>':''}</div>`).join('');
+  return `<p style="color:var(--text-2);margin-bottom:14px">Suggested addresses for <b>${esc(W.first)} ${esc(W.last)}</b> — checked against Microsoft Graph:</p>
+    <div class="check-list">${opts||'<div class="empty">Enter a name in step 1 first</div>'}</div>
+    <div class="field" style="margin-top:14px"><label>Or enter a custom address</label><input value="${esc(W.email)}" oninput="SCM.wizSet('email',this.value)" placeholder="name@${C[activeCompanyName()].domain}"></div>`;
+}
+function stepLicence(){
+  const card=(name,price,feats)=>`<div class="lic-card ${W.licence===name?'sel':''}" onclick="SCM.wizSet('licence','${name}');SCM.wizRefresh()">
+    <h4>${name}</h4><div class="price">${money(price)}<span>/user/mo</span></div>
+    <ul>${feats.map(f=>`<li>${f}</li>`).join('')}</ul></div>`;
+  return `<div class="lic-cards">
+    ${card('Business Basic',LP['Business Basic'],['Web & mobile Office','Email & calendar','Teams','1TB OneDrive'])}
+    ${card('Business Standard',LP['Business Standard'],['Everything in Basic','Desktop Office apps','Webinars','Bookings'])}
+  </div>`;
+}
+function stepGroups(){
+  const groups=[['All Staff','Company-wide distribution'],[activeCompanyName()+' Team','Security group'],['Management','Restricted'],['Finance','Finance systems access'],['Operations','Ops tools']];
+  return listPicker(groups,'groups','Security groups','Tick the groups this user should join.');
+}
+function stepMailboxes(){
+  const mb=[['info@'+C[activeCompanyName()].domain,'Shared inbox'],['accounts@'+C[activeCompanyName()].domain,'Finance'],['support@'+C[activeCompanyName()].domain,'Support queue']];
+  return listPicker(mb,'mailboxes','Shared mailboxes','Grant access to shared mailboxes (optional).');
+}
+function stepTeams(){
+  const t=[['General','Company-wide team'],[activeCompanyName(),'Main team'],['Projects','Project collaboration']];
+  return listPicker(t,'teams','Microsoft Teams','Add the user to Teams (optional).');
+}
+function listPicker(items,key,title,sub){
+  return `<p style="color:var(--text-2);margin-bottom:14px">${sub}</p><div class="check-list">
+    ${items.map(([n,d])=>{const sel=W[key].includes(n);return `<div class="check-item ${sel?'sel':''}" onclick="SCM.wizToggle('${key}','${esc(n).replace(/'/g,"")}')">
+      <input type="checkbox" ${sel?'checked':''} onclick="event.preventDefault()"><div style="flex:1"><b>${esc(n)}</b><div class="desc">${esc(d)}</div></div></div>`;}).join('')}
+  </div>`;
+}
+function stepReview(){
+  const r=(k,v)=>`<div class="review-row"><span class="k">${k}</span><span class="v">${esc(v||'—')}</span></div>`;
+  return `<div class="review-box">
+    ${r('Name',(W.display||W.first+' '+W.last).trim())}
+    ${r('Email',W.email)}
+    ${r('Job title',W.title)}
+    ${r('Department',W.dept)}
+    ${r('Manager',W.manager)}
+    ${r('Licence',W.licence+' ('+money(LP[W.licence])+'/mo)')}
+    ${r('Security groups',W.groups.join(', '))}
+    ${r('Shared mailboxes',W.mailboxes.join(', '))}
+    ${r('Teams',W.teams.join(', '))}
+  </div>
+  <p style="color:var(--text-3);font-size:12.5px;margin-top:14px">On approval, Selcap will create this user in Microsoft 365 via Graph, assign the licence and groups, generate a temporary password and force a change at first sign-in.</p>`;
+}
+function wizSet(k,v){W[k]=v;if(k==='first'||k==='last')W.display='';}
+function wizToggle(k,v){const i=W[k].indexOf(v);if(i<0)W[k].push(v);else W[k].splice(i,1);renderWizard();}
+function wizRefresh(){renderWizard();}
+function wizNext(){
+  if(W.step===1&&(!W.first||!W.last)){SCM.toast('error','Missing details','First name and surname are required.');return;}
+  if(W.step===2&&!W.email){SCM.toast('error','No email selected','Choose or enter an email address.');return;}
+  W.step++;renderWizard();
+}
+function wizBack(){W.step--;renderWizard();}
+function wizSubmit(){
+  const name=(W.display||W.first+' '+W.last).trim();
+  const req={id:'r'+Date.now(),type:'New User',company:activeCompanyName(),target:name,by:S.user.name,date:now(),status:'Pending',licence:W.licence,comments:'',payload:{...W}};
+  S.requests.unshift(req);
+  SCM.audit('Submitted request: New User — '+name,'—','Pending');
+  SCM.closeModal();
+  SCM.toast('success','Request submitted',S.user.role==='super'?'Approve it in the Request Centre to provision.':'Selcap will review and provision this user.');
+  SCM.renderNav();
+  if(S.page==='requests'||S.page==='dashboard')SCM.go(S.page);
+}
+
+/* ---------- OFFBOARDING ---------- */
+function startOffboard(){
+  const users=SCM.visibleUsers().filter(u=>u.status==='Active');
+  const opts=users.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.email)}</option>`).join('');
+  SCM.modal('Offboard employee — '+activeCompanyName(),`
+    <div class="field"><label>Employee <span class="req">*</span></label><select id="off_user">${opts}</select></div>
+    <div class="field"><label>Leave date</label><input type="date" id="off_date" value="${today()}"></div>
+    <div class="field"><label>Forward email to</label><input id="off_fwd" placeholder="manager@${C[activeCompanyName()].domain}"></div>
+    <div class="check-list" style="margin-top:8px">
+      <label class="check-item sel"><input type="checkbox" id="off_disable" checked><span>Disable sign-in immediately</span></label>
+      <label class="check-item sel"><input type="checkbox" id="off_convert" checked><span>Convert to shared mailbox</span></label>
+      <label class="check-item sel"><input type="checkbox" id="off_lic" checked><span>Remove Microsoft licence</span></label>
+      <label class="check-item"><input type="checkbox" id="off_archive"><span>Archive OneDrive</span></label>
+    </div>
+    <div class="field" style="margin-top:14px"><label>Delete account after (days)</label><input type="number" id="off_days" value="30"></div>`,
+    `<button class="btn btn-ghost" onclick="SCM.closeModal()">Cancel</button><button class="btn btn-danger" onclick="SCM.submitOffboard()">Submit offboarding request</button>`);
+}
+function submitOffboard(){
+  const uid=$('#off_user').value;const u=S.users.find(x=>x.id===uid);if(!u)return;
+  const req={id:'r'+Date.now(),type:'Offboard User',company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:'Leave date '+$('#off_date').value};
+  S.requests.unshift(req);
+  SCM.audit('Submitted request: Offboard — '+u.name,'Active','Pending (offboarding)');
+  SCM.closeModal();SCM.toast('success','Offboarding submitted','Selcap will process on approval.');SCM.renderNav();
+  if(S.page==='requests'||S.page==='dashboard')SCM.go(S.page);
+}
+
+/* ---------- REVIEW / APPROVE REQUEST ---------- */
+function reviewRequest(id){
+  const r=S.requests.find(x=>x.id===id);if(!r)return;
+  const canAct=r.status==='Pending'&&S.user.role==='super';
+  const info=`<div class="detail-grid">
+    <div class="k">Type</div><div><b>${esc(r.type)}</b></div>
+    <div class="k">Target</div><div>${esc(r.target)}</div>
+    <div class="k">Company</div><div>${esc(r.company)}</div>
+    <div class="k">Submitted by</div><div>${esc(r.by)}</div>
+    <div class="k">Date</div><div>${esc(r.date)}</div>
+    <div class="k">Licence</div><div>${esc(r.licence)}</div>
+    <div class="k">Status</div><div>${SCM.statusPill(r.status)}</div>
+    ${r.comments?`<div class="k">Comments</div><div>${esc(r.comments)}</div>`:''}
+  </div>`;
+  const foot=canAct
+    ? `<button class="btn btn-danger" onclick="SCM.rejectRequest('${id}')">Reject</button><button class="btn btn-green" onclick="SCM.approveRequest('${id}')">Approve & execute</button>`
+    : `<span></span><button class="btn btn-ghost" onclick="SCM.closeModal()">Close</button>`;
+  SCM.modal('Request — '+r.type,info+(canAct?`<p style="color:var(--text-3);font-size:12.5px;margin-top:14px">Approving runs the action against Microsoft 365 via Graph and records it in the audit log.</p>`:''),foot);
+}
+function approveRequest(id){
+  const r=S.requests.find(x=>x.id===id);if(!r)return;
+  r.status='Approved';
+  // Simulate Graph execution
+  if(r.type==='New User'){
+    const pw=genPassword();
+    const p=r.payload||{};
+    const newUser={id:'u'+Date.now(),name:r.target,email:p.email||(r.target.toLowerCase().replace(/ /g,'.')+'@'+C[r.company].domain),
+      domain:C[r.company].domain,company:r.company,title:p.title||'',department:p.dept||'',office:p.office||'',mobile:p.mobile||'',
+      created:today(),license:r.licence,status:'Active'};
+    S.users.unshift(newUser);
+    SCM.audit('Created user '+r.target,'—',newUser.email,'201 Created');
+    showCredentials(r.target,newUser.email,pw);
+  } else if(r.type==='Password Reset'){
+    const pw=genPassword();
+    SCM.audit('Reset password for '+r.target,'—','Temp password issued','200 OK');
+    showCredentials(r.target,'(existing account)',pw);
+  } else if(r.type.startsWith('Offboard')||r.type==='Disable User'){
+    const u=S.users.find(x=>x.name===r.target&&x.company===r.company);if(u)u.status='Disabled';
+    SCM.audit(r.type+' '+r.target,'Active','Disabled','204 No Content');
+    SCM.closeModal();SCM.toast('success','Done','Microsoft 365 updated. '+r.target+' disabled.');
+  } else {
+    SCM.audit('Approved '+r.type+' — '+r.target,'Pending','Approved','200 OK');
+    SCM.closeModal();SCM.toast('success','Approved','Microsoft 365 updated via Graph.');
+  }
+  SCM.renderNav();
+  if(['requests','dashboard','users','audit'].includes(S.page))SCM.go(S.page);
+}
+function rejectRequest(id){
+  const r=S.requests.find(x=>x.id===id);if(!r)return;
+  r.status='Rejected';
+  SCM.audit('Rejected '+r.type+' — '+r.target,'Pending','Rejected');
+  SCM.closeModal();SCM.toast('info','Request rejected',r.target+' — no changes made.');
+  SCM.renderNav();if(['requests','dashboard'].includes(S.page))SCM.go(S.page);
+}
+function showCredentials(name,email,pw){
+  SCM.modal('User provisioned ✅',`
+    <p style="margin-bottom:6px"><b>${esc(name)}</b> is ready in Microsoft 365.</p>
+    <p style="color:var(--text-2);font-size:13px;margin-bottom:12px">Share these credentials securely. The user must change the password at first sign-in.</p>
+    <div class="credbox">
+      <div class="cred-row"><span>${esc(email)}</span><button class="btn btn-ghost btn-sm copy" onclick="SCM.copyText('${esc(email)}')">Copy</button></div>
+      <div class="cred-row"><span>${esc(pw)}</span><button class="btn btn-ghost btn-sm copy" onclick="SCM.copyText('${esc(pw)}')">Copy</button></div>
+    </div>
+    <p style="color:var(--text-3);font-size:12px;margin-top:12px">🔒 This password is shown once and its viewing is recorded in the audit log.</p>`,
+    `<span></span><button class="btn btn-primary" onclick="SCM.closeModal()">Done</button>`);
+}
+function copyText(t){navigator.clipboard&&navigator.clipboard.writeText(t);SCM.toast('success','Copied','Copied to clipboard.');}
+
+/* ---------- Quick user actions ---------- */
+function viewUser(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  SCM.modal(u.name,`<div class="detail-grid">
+    <div class="k">Email</div><div>${esc(u.email)}</div>
+    <div class="k">Company</div><div>${esc(u.company)}</div>
+    <div class="k">Job title</div><div>${esc(u.title||'—')}</div>
+    <div class="k">Department</div><div>${esc(u.department||'—')}</div>
+    <div class="k">Office</div><div>${esc(u.office||'—')}</div>
+    <div class="k">Mobile</div><div>${esc(u.mobile||'—')}</div>
+    <div class="k">Licence</div><div>${SCM.licPill(u.license)}</div>
+    <div class="k">Status</div><div>${SCM.statusPill(u.status)}</div>
+    <div class="k">Created</div><div>${esc(u.created||'—')}</div>
+  </div>`,`<button class="btn btn-danger" onclick="SCM.requestReset('${u.id}')">🔑 Reset password</button>
+    <button class="btn btn-ghost" onclick="SCM.closeModal()">Close</button>`);
+}
+function requestReset(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  const req={id:'r'+Date.now(),type:'Password Reset',company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:'Password reset requested'};
+  S.requests.unshift(req);SCM.audit('Submitted request: Password Reset — '+u.name,'—','Pending');
+  SCM.closeModal();SCM.toast('success','Reset requested',S.user.role==='super'?'Approve in Request Centre.':'Selcap will process the reset.');SCM.renderNav();
+  if(S.page==='requests')SCM.go('requests');
+}
+function toggleUser(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  const act=u.status==='Active'?'Disable User':'Enable User';
+  const req={id:'r'+Date.now(),type:act,company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:''};
+  S.requests.unshift(req);SCM.audit('Submitted request: '+act+' — '+u.name,'—','Pending');
+  SCM.toast('success','Request submitted',act+' request for '+u.name+' sent for approval.');SCM.renderNav();
+  if(S.page==='requests')SCM.go('requests');
+}
+
+/* ---------- table helpers ---------- */
+function userSearch(v){S.search=v;SCM.renderUserTable();}
+function setFilter(k,v){S[k]=v;SCM.renderUserTable();}
+function sortUsers(k){if(S.sortKey===k)S.sortDir*=-1;else{S.sortKey=k;S.sortDir=1;}SCM.renderUserTable();}
+function exportUsers(){
+  const list=SCM.visibleUsers();
+  const rows=[['Name','Email','Department','Title','Licence','Status','Created']];
+  list.forEach(u=>rows.push([u.name,u.email,u.department,u.title,u.license,u.status,u.created]));
+  const csv=rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=activeCompanyName().replace(/ /g,'_')+'_users.csv';a.click();
+  SCM.toast('success','Exported',list.length+' users exported to CSV.');
+}
+
+Object.assign(SCM,{
+  startNewUser,renderWizard,wizSet,wizToggle,wizRefresh,wizNext,wizBack,wizSubmit,
+  startOffboard,submitOffboard,reviewRequest,approveRequest,rejectRequest,showCredentials,copyText,
+  viewUser,requestReset,toggleUser,userSearch,setFilter,sortUsers,exportUsers
+});
+})();
+
+/* ============ BOOT ============ */
+SCM.seedData();
+SCM.buildDemoUsers();
+
+</script>
+</body>
+</html>
