@@ -420,6 +420,8 @@ function accountForEmail(email,displayName){
   return {name:displayName||email, role:'readonly', company, email:key}; // default: read-only in own company
 }
 async function msLogin(){
+  // Ensure Firebase is initialised (it may not have been ready at page load)
+  if(window.SCM && SCM.DB && SCM.DB.init){ SCM.DB.init(); }
   // Prefer Firebase Microsoft sign-in (gives the auth token the Cloud Functions need)
   if(window.SCM && SCM.DB && SCM.DB.authReady && SCM.DB.authReady()){
     try{
@@ -432,20 +434,24 @@ async function msLogin(){
       return;
     }catch(e){
       if(e && (e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'))return;
-      toast('error','Sign-in failed', (e&&e.message)? e.message.slice(0,100):'Could not complete Microsoft sign-in.');
+      toast('error','Sign-in failed', (e&&e.message)? e.message.slice(0,120):'Could not complete Microsoft sign-in.');
       return;
     }
   }
-  // Fallback: MSAL (login only, no provisioning) or demo
+  // Fallback: MSAL (login only)
   initMsal();
-  if(!msalApp){ toast('error','Sign-in not ready','Use a demo profile below.'); return; }
-  try{
-    const res=await msalApp.loginPopup({scopes:['User.Read'],prompt:'select_account'});
-    const email=(res.account.username||'').toLowerCase();
-    const acc=accountForEmail(email,res.account.name||email);
-    if(!acc){ toast('error','No access','Account not linked to a managed company.'); return; }
-    loginWith(acc);
-  }catch(e){ if(e&&e.errorCode==='user_cancelled')return; toast('error','Sign-in failed','Could not complete Microsoft sign-in.'); }
+  if(msalApp){
+    try{
+      const res=await msalApp.loginPopup({scopes:['User.Read'],prompt:'select_account'});
+      const email=(res.account.username||'').toLowerCase();
+      const acc=accountForEmail(email,res.account.name||email);
+      if(!acc){ toast('error','No access','Your account is not linked to a managed company. Contact Selcap.'); return; }
+      loginWith(acc);
+      return;
+    }catch(e){ if(e&&e.errorCode==='user_cancelled')return; toast('error','Sign-in failed','Could not complete Microsoft sign-in.'); return; }
+  }
+  // Neither available — genuine config/network issue
+  toast('error','Sign-in unavailable','Could not reach the sign-in service. Please check your connection and try again, or contact Selcap.');
 }
 function loginWith(acc){
   S.user=acc; S.activeCompany=acc.company;
