@@ -939,6 +939,23 @@ function pushRequest(req){
   if(SCM.DB && SCM.DB.isReady()){ SCM.DB.addRequest(req); }
   else { S.requests.unshift(req); }
 }
+// Company admins manage their own company: their requests auto-approve (provision instantly).
+// Super admins still review requests for companies (they click approve as before).
+function selfApproves(){ return S.user.role==='admin'; }
+async function submitAndMaybeApprove(req, submittedToast){
+  pushRequest(req);
+  SCM.audit('Submitted request: '+req.type+' — '+req.target,'—','Pending');
+  SCM.closeModal();
+  SCM.renderNav();
+  if(selfApproves()){
+    // Auto-approve: run the same execution path immediately.
+    SCM.toast('info','Working…','Applying the change in Microsoft 365…');
+    await SCM.approveRequest(req.id);
+  } else {
+    SCM.toast('success','Request submitted', submittedToast || 'Sent for approval.');
+    if(S.page==='requests'||S.page==='dashboard')SCM.go(S.page);
+  }
+}
 function setStatus(r, patch){
   Object.assign(r, patch);
   if(SCM.DB && SCM.DB.isReady() && r.id && !/^r[1-6]$/.test(r.id)){ SCM.DB.updateRequest(r.id, patch); }
@@ -1052,12 +1069,7 @@ function wizBack(){W.step--;renderWizard();}
 function wizSubmit(){
   const name=(W.display||W.first+' '+W.last).trim();
   const req={id:'r'+Date.now(),type:'New User',company:activeCompanyName(),target:name,by:S.user.name,date:now(),status:'Pending',licence:W.licence,comments:'',payload:{...W}};
-  pushRequest(req);
-  SCM.audit('Submitted request: New User — '+name,'—','Pending');
-  SCM.closeModal();
-  SCM.toast('success','Request submitted',S.user.role==='super'?'Approve it in the Request Centre to provision.':'Selcap will review and provision this user.');
-  SCM.renderNav();
-  if(S.page==='requests'||S.page==='dashboard')SCM.go(S.page);
+  submitAndMaybeApprove(req, S.user.role==='super'?'Approve it in the Request Centre to provision.':'Selcap will review and provision this user.');
 }
 
 /* ---------- OFFBOARDING ---------- */
@@ -1080,10 +1092,7 @@ function startOffboard(){
 function submitOffboard(){
   const uid=$('#off_user').value;const u=S.users.find(x=>x.id===uid);if(!u)return;
   const req={id:'r'+Date.now(),type:'Offboard User',company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:'Leave date '+$('#off_date').value};
-  pushRequest(req);
-  SCM.audit('Submitted request: Offboard — '+u.name,'Active','Pending (offboarding)');
-  SCM.closeModal();SCM.toast('success','Offboarding submitted','Selcap will process on approval.');SCM.renderNav();
-  if(S.page==='requests'||S.page==='dashboard')SCM.go(S.page);
+  submitAndMaybeApprove(req,'Selcap will process on approval.');
 }
 
 /* ---------- REVIEW / APPROVE REQUEST ---------- */
@@ -1220,17 +1229,13 @@ function viewUser(id){
 function requestReset(id){
   const u=S.users.find(x=>x.id===id);if(!u)return;
   const req={id:'r'+Date.now(),type:'Password Reset',company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:'Password reset requested'};
-  pushRequest(req);SCM.audit('Submitted request: Password Reset — '+u.name,'—','Pending');
-  SCM.closeModal();SCM.toast('success','Reset requested',S.user.role==='super'?'Approve in Request Centre.':'Selcap will process the reset.');SCM.renderNav();
-  if(S.page==='requests')SCM.go('requests');
+  submitAndMaybeApprove(req, S.user.role==='super'?'Approve in Request Centre.':'Selcap will process the reset.');
 }
 function toggleUser(id){
   const u=S.users.find(x=>x.id===id);if(!u)return;
   const act=u.status==='Active'?'Disable User':'Enable User';
   const req={id:'r'+Date.now(),type:act,company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:''};
-  pushRequest(req);SCM.audit('Submitted request: '+act+' — '+u.name,'—','Pending');
-  SCM.toast('success','Request submitted',act+' request for '+u.name+' sent for approval.');SCM.renderNav();
-  if(S.page==='requests')SCM.go('requests');
+  submitAndMaybeApprove(req, act+' request for '+u.name+' sent for approval.');
 }
 
 /* ---------- table helpers ---------- */
