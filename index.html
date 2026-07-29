@@ -604,7 +604,7 @@ const {$, el, initials, esc, money, today, now, colourFor} = SCM._;
 const S = SCM.S, C = SCM.COMPANIES, LP = SCM.LICENCE_PRICE;
 const vis = ()=>SCM.visibleUsers();
 const activeCompanyName = ()=> S.user.role==='super'?S.activeCompany:S.user.company;
-const canRaise = ()=> S.user.role==='admin';
+const canRaise = ()=> S.user.role==='admin' || S.user.role==='super';
 
 function head(title,sub,actions){
   return `<div class="page-head"><div><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap">${actions||''}</div></div>`;
