@@ -313,8 +313,8 @@ let S = {
 // ---------- Persistence (localStorage disabled in artifact; in-memory) ----------
 function seedData(){
   S.users = SEED_USERS.map((u,i)=>({id:'u'+i, ...u}));
-  S.requests = SAMPLE_REQUESTS();
-  S.audit = SAMPLE_AUDIT();
+  S.requests = [];
+  S.audit = [];
 }
 
 // ---------- Helpers ----------
@@ -578,24 +578,9 @@ return {
 
 /* ============ PAGES & FEATURES (attached to SCM) ============ */
 
-/* ============ Sample data generators ============ */
-function SAMPLE_REQUESTS(){
-  return [
-    {id:'r1',type:'New User',company:'HomeSite Group',target:'Sarah Jenkins',by:'Kevin Morrow',date:'26 Jul 2026, 09:14',status:'Pending',licence:'Business Standard',comments:'New starter — Operations, starts Monday'},
-    {id:'r2',type:'Password Reset',company:'YEC Management',target:'David Owen',by:'Lee Allen',date:'27 Jul 2026, 14:02',status:'Pending',licence:'—',comments:'User locked out'},
-    {id:'r3',type:'Licence Upgrade',company:'HomeSite Group',target:'James Hill',by:'Kevin Morrow',date:'27 Jul 2026, 16:40',status:'Pending',licence:'Basic → Standard',comments:'Needs desktop Office'},
-    {id:'r4',type:'Disable User',company:'Cato Services',target:'Mark Peters',by:'Peter Baldwin',date:'25 Jul 2026, 11:20',status:'Approved',licence:'—',comments:'Left the business'},
-    {id:'r5',type:'New User',company:'YEC Management',target:'Priya Shah',by:'Lee Allen',date:'24 Jul 2026, 10:05',status:'Approved',licence:'Business Basic',comments:''},
-    {id:'r6',type:'Password Reset',company:'HomeSite Group',target:'Anna Cole',by:'Kevin Morrow',date:'23 Jul 2026, 08:50',status:'Rejected',licence:'—',comments:'Duplicate request'},
-  ];
-}
-function SAMPLE_AUDIT(){
-  return [
-    {id:'a1',who:'Peter Baldwin',company:'Cato Services',date:'25 Jul 2026, 11:22',ip:'82.14.9.31',action:'Disabled user Mark Peters',before:'Active',after:'Disabled',status:'Success',graph:'204 No Content'},
-    {id:'a2',who:'Ajay Kawa',company:'YEC Management',date:'24 Jul 2026, 10:07',ip:'82.14.9.31',action:'Created user Priya Shah',before:'—',after:'priya@yecmanagement.com',status:'Success',graph:'201 Created'},
-    {id:'a3',who:'Ajay Kawa',company:'HomeSite Group',date:'23 Jul 2026, 09:00',ip:'82.14.9.31',action:'Rejected request (Password Reset — Anna Cole)',before:'Pending',after:'Rejected',status:'Success',graph:'—'},
-  ];
-}
+/* ============ Sample data generators (emptied for live use) ============ */
+function SAMPLE_REQUESTS(){ return []; }
+function SAMPLE_AUDIT(){ return []; }
 
 /* ============ PAGE RENDERERS ============ */
 const PAGES = {};
@@ -914,15 +899,8 @@ function start(){
 function stop(){ if(unsubReq)unsubReq(); if(unsubAudit)unsubAudit(); unsubReq=unsubAudit=null; }
 
 // If Firestore is empty on first run, seed the sample requests/audit once.
-async function seedIfEmpty(){
-  if(!ready) return;
-  try{
-    const rq=await db.collection('requests').limit(1).get();
-    if(rq.empty){
-      for(const r of SAMPLE_REQUESTS()){ await addRequest(r,true); }
-    }
-  }catch(e){ console.warn('seed check failed',e); }
-}
+// No demo seeding — the portal starts clean and fills from real activity.
+async function seedIfEmpty(){ return; }
 
 // ---- Writes ----
 async function addRequest(r, keepId){
@@ -1139,11 +1117,14 @@ async function approveRequest(id){
       if(r.type==='New User'){
         const p=r.payload||{};
         const upn=p.email||(r.target.toLowerCase().replace(/ /g,'.')+'@'+C[r.company].domain);
+        // Company admin email to notify (option 2 — full credentials)
+        const ADMIN_BY_COMPANY={'HomeSite Group':'kevin@homesitegroup.com','YEC Management':'lee@yecmanagement.com','Cato Services':'peter@catoservices.com','SelCap Group':'raj@selcapgroup.com','Chanlon Property':'ajay@catoservices.com','Thinc Digital':'ajay@catoservices.com','Winsley Group':'ajay@catoservices.com'};
         const res=await SCM.DB.callFn('provisionUser',{
           displayName:r.target, userPrincipalName:upn,
           mailNickname:upn.split('@')[0], licence:r.licence,
           jobTitle:p.title||'', department:p.dept||'', mobilePhone:p.mobile||'',
-          office:p.office||'', company:r.company, groupIds:[]
+          office:p.office||'', company:r.company, groupIds:[],
+          adminEmail: ADMIN_BY_COMPANY[r.company] || null
         });
         showCredentials(r.target,res.userPrincipalName,res.password);
       } else if(r.type==='Password Reset'){
