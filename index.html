@@ -291,9 +291,10 @@ const LICENCE_PRICE = {'Business Basic':4.90,'Business Standard':10.30,'Unlicens
 // email -> {role, name, company, super?}
 const ACCOUNTS = {
   'ajay@catoservices.com':      {name:'Ajay Kawa',    role:'super',   company:'Cato Services'},
+  'raj@catoservices.com':       {name:'Raj Kumar',    role:'super',   company:'Cato Services'},
   'peter@catoservices.com':     {name:'Peter Baldwin',role:'admin',   company:'Cato Services'},
-  'kevin@homesitegroup.com':    {name:'Kevin Morrow', role:'admin',   company:'HomeSite Group'},
-  'lee@yecmanagement.com':      {name:'Lee Allen',    role:'admin',   company:'YEC Management'},
+  'kevin.morrow@homesitegroup.com': {name:'Kevin Morrow', role:'admin',   company:'HomeSite Group'},
+  'lee.allen@yecmanagement.com':    {name:'Lee Allen',    role:'admin',   company:'YEC Management'},
   'raj@selcapgroup.com':        {name:'Raj Kumar',    role:'admin',   company:'SelCap Group'},
 };
 // Ajay is also admin for Chanlon, SelCap, Thinc — as super he sees all anyway.
@@ -1118,7 +1119,7 @@ async function approveRequest(id){
         const p=r.payload||{};
         const upn=p.email||(r.target.toLowerCase().replace(/ /g,'.')+'@'+C[r.company].domain);
         // Company admin email to notify (option 2 — full credentials)
-        const ADMIN_BY_COMPANY={'HomeSite Group':'kevin@homesitegroup.com','YEC Management':'lee@yecmanagement.com','Cato Services':'peter@catoservices.com','SelCap Group':'raj@selcapgroup.com','Chanlon Property':'ajay@catoservices.com','Thinc Digital':'ajay@catoservices.com','Winsley Group':'ajay@catoservices.com'};
+        const ADMIN_BY_COMPANY={'HomeSite Group':'kevin.morrow@homesitegroup.com','YEC Management':'lee.allen@yecmanagement.com','Cato Services':'peter@catoservices.com','SelCap Group':'raj@catoservices.com','Chanlon Property':'ajay@catoservices.com','Thinc Digital':'ajay@catoservices.com','Winsley Group':'ajay@catoservices.com'};
         const res=await SCM.DB.callFn('provisionUser',{
           displayName:r.target, userPrincipalName:upn,
           mailNickname:upn.split('@')[0], licence:r.licence,
