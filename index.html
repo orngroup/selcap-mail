@@ -708,7 +708,8 @@ function renderUserTable(){
     <td><div class="row-actions">
       <button class="icon-act" title="View" onclick="SCM.viewUser('${u.id}')">👁</button>
       ${SCM.isReadOnly()?'':`<button class="icon-act" title="Reset password" onclick="SCM.requestReset('${u.id}')">🔑</button>
-      <button class="icon-act" title="${u.status==='Active'?'Disable':'Enable'}" onclick="SCM.toggleUser('${u.id}')">${u.status==='Active'?'🚫':'✅'}</button>`}
+      <button class="icon-act" title="${u.status==='Active'?'Disable':'Enable'}" onclick="SCM.toggleUser('${u.id}')">${u.status==='Active'?'🚫':'✅'}</button>
+      <button class="icon-act" title="Delete mailbox" onclick="SCM.confirmDelete('${u.id}')">🗑</button>`}
     </div></td></tr>`).join('');
   $('#userTable').innerHTML=`<div class="table-wrap"><table><thead><tr>
     ${th('name','User')}${th('department','Department')}${th('title','Job Title')}${th('license','Licence')}${th('status','Status')}${th('created','Created')}<th>Actions</th>
@@ -943,15 +944,17 @@ function pushRequest(req){
 // Super admins still review requests for companies (they click approve as before).
 function selfApproves(){ return S.user.role==='admin'; }
 async function submitAndMaybeApprove(req, submittedToast){
-  pushRequest(req);
-  SCM.audit('Submitted request: '+req.type+' — '+req.target,'—','Pending');
   SCM.closeModal();
-  SCM.renderNav();
   if(selfApproves()){
-    // Auto-approve: run the same execution path immediately.
+    // Admin self-manages: execute immediately, no pending record needed.
+    SCM.renderNav();
     SCM.toast('info','Working…','Applying the change in Microsoft 365…');
-    await SCM.approveRequest(req.id);
+    await SCM.approveRequest(req);
   } else {
+    // Super submits for another company: record as Pending for review.
+    pushRequest(req);
+    SCM.audit('Submitted request: '+req.type+' — '+req.target,'—','Pending');
+    SCM.renderNav();
     SCM.toast('success','Request submitted', submittedToast || 'Sent for approval.');
     if(S.page==='requests'||S.page==='dashboard')SCM.go(S.page);
   }
@@ -1114,8 +1117,9 @@ function reviewRequest(id){
     : `<span></span><button class="btn btn-ghost" onclick="SCM.closeModal()">Close</button>`;
   SCM.modal('Request — '+r.type,info+(canAct?`<p style="color:var(--text-3);font-size:12.5px;margin-top:14px">Approving runs the action against Microsoft 365 via Graph and records it in the audit log.</p>`:''),foot);
 }
-async function approveRequest(id){
-  const r=S.requests.find(x=>x.id===id);if(!r)return;
+async function approveRequest(idOrReq){
+  const r = (typeof idOrReq==='object' && idOrReq) ? idOrReq : S.requests.find(x=>x.id===idOrReq);
+  if(!r)return;
   const live = SCM.DB && SCM.DB.authReady && SCM.DB.authReady();
 
   // ----- LIVE MODE: call Cloud Functions to act on Microsoft 365 -----
@@ -1237,6 +1241,39 @@ function toggleUser(id){
   const req={id:'r'+Date.now(),type:act,company:u.company,target:u.name,by:S.user.name,date:now(),status:'Pending',licence:'—',comments:''};
   submitAndMaybeApprove(req, act+' request for '+u.name+' sent for approval.');
 }
+function confirmDelete(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  SCM.modal('Delete mailbox — '+u.name,`
+    <p style="margin-bottom:10px">You are about to <b>permanently delete</b> this account and mailbox:</p>
+    <div class="review-box"><div class="review-row"><span class="k">Name</span><span class="v">${SCM.esc(u.name)}</span></div>
+    <div class="review-row"><span class="k">Email</span><span class="v">${SCM.esc(u.email)}</span></div>
+    <div class="review-row"><span class="k">Company</span><span class="v">${SCM.esc(u.company)}</span></div></div>
+    <p style="color:var(--red);font-size:13px;margin-top:12px">⚠️ This removes the user from Microsoft 365. It can be recovered from the deleted-users bin for 30 days, after which it is permanent — mailbox, files and all.</p>
+    <div class="field" style="margin-top:12px"><label>Type the word DELETE to confirm</label><input id="del_confirm" placeholder="DELETE" autocomplete="off"></div>`,
+    `<button class="btn btn-ghost" onclick="SCM.closeModal()">Cancel</button><button class="btn btn-danger" onclick="SCM.doDelete('${u.id}')">Delete mailbox</button>`);
+}
+async function doDelete(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  const typed=(document.getElementById('del_confirm')||{}).value||'';
+  if(typed.trim().toUpperCase()!=='DELETE'){ SCM.toast('error','Not confirmed','Type DELETE to confirm.'); return; }
+  SCM.closeModal();
+  const live = SCM.DB && SCM.DB.authReady && SCM.DB.authReady();
+  if(live){
+    SCM.toast('info','Working…','Deleting the mailbox in Microsoft 365…');
+    try{
+      await SCM.DB.callFn('deleteUser',{userId:u.email,company:u.company});
+      S.users=S.users.filter(x=>x.id!==id);
+      SCM.audit('Deleted user '+u.name,'Active','Deleted (30-day recovery)','204 No Content');
+      SCM.toast('success','Deleted',u.name+' removed from Microsoft 365 (recoverable for 30 days).');
+      if(S.page==='users')SCM.go('users');
+    }catch(e){ SCM.toast('error','Delete failed',(e&&e.message)?e.message.slice(0,120):'Could not delete.'); }
+  } else {
+    S.users=S.users.filter(x=>x.id!==id);
+    SCM.audit('Deleted user '+u.name,'Active','Deleted (demo)','—');
+    SCM.toast('success','Deleted (demo)',u.name+' removed.');
+    if(S.page==='users')SCM.go('users');
+  }
+}
 
 /* ---------- table helpers ---------- */
 async function syncFrom365(){
@@ -1274,7 +1311,7 @@ function exportUsers(){
 Object.assign(SCM,{
   startNewUser,renderWizard,wizSet,wizToggle,wizRefresh,wizNext,wizBack,wizSubmit,
   startOffboard,submitOffboard,reviewRequest,approveRequest,rejectRequest,showCredentials,copyText,
-  viewUser,requestReset,toggleUser,userSearch,setFilter,sortUsers,exportUsers,syncFrom365
+  viewUser,requestReset,toggleUser,confirmDelete,doDelete,userSearch,setFilter,sortUsers,exportUsers,syncFrom365
 });
 })();
 
